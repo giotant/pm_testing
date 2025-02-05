@@ -26,3 +26,11 @@ jobs:
         run: node generateBurndownChart.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit Burndown Chart Image
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add burndown_chart.png
+          git commit -m "Add burndown chart"
+          git push
