@@ -1,0 +1,40 @@
+name: Track Milestone Progress
+
+on:
+  # Trigger action on a schedule (every day) or specific issue events
+  schedule:
+    - cron: '0 0 * * *'  # Runs every day at midnight (UTC)
+  issues:
+    types: [closed]
+
+jobs:
+  check-milestone-progress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if all issues in the milestone are closed
+        run: |
+          # Extract the milestone number from the closed issue event
+          MILESTONE_NUMBER=$(jq --raw-output .issue.milestone.number $GITHUB_EVENT_PATH)
+          
+          if [ "$MILESTONE_NUMBER" != "null" ]; then
+            # Fetch all issues in the milestone
+            REPO_OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
+            REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+
+            ISSUES=$(curl -s "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues?milestone=$MILESTONE_NUMBER")
+
+            # Count the number of open issues
+            OPEN_ISSUES=$(echo "$ISSUES" | jq '[.[] | select(.state=="open")] | length')
+
+            if [ "$OPEN_ISSUES" -eq 0 ]; then
+              echo "All issues in Milestone #$MILESTONE_NUMBER are closed. Marking milestone as completed."
+              
+              # Update the milestone state to closed
+              curl -X PATCH \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -d '{"state": "closed"}' \
+              "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/milestones/$MILESTONE_NUMBER"
+            else
+              echo "Milestone #$MILESTONE_NUMBER still has open issues. Not closing milestone."
+            fi
+          fi
