@@ -23,7 +23,7 @@ jobs:
           npm install axios chart.js
 
       - name: Run Burndown Chart Script
-        run: node generateBurndownChart.js
+        run: node ./github/workflows/generateBurndownChart.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
